@@ -1,59 +1,68 @@
-# Ex.No: 10 Learning – Use Supervised Learning  
-### DATE: 28/10/2025                                                                            
-### REGISTER NUMBER : 212222060255 
-### AIM: 
-To write a program to train a supervised LSTM classifier for The-Millionare-Stock-Predictor, which predicts the next 1-minute EURUSDm price movement (UP / DOWN) using historical Forex data.
-###  Algorithm:
-Data Collection & Loading
-1.1. Collect 1-minute EURUSDm candlestick data in CSV format
-EURUSD_Candlestick_1_M_BID_01.01.2024-30.06.2024.csv.
-1.2. Load the CSV using pandas.
+# Ex.No: 10 - Supervised Learning (LSTM Classifier)
 
-Data Pre-processing
-2.1. Select required columns: datetime, open, high, low, close, volume.
-2.2. Sort data by datetime.
-2.3. Normalize/scale numerical features using MinMaxScaler.
-2.4. Create the label for supervised learning:
+## Date
+28/10/2025
 
-If next_close > current_close → class = 1 (UP/BUY)
+## Register Number
+212222060255
 
-Else → class = 0 (DOWN/SELL)
+---
 
-Sequence Creation (Supervised Learning Format)
-3.1. Choose a window size TIME_STEPS (e.g., 60 minutes).
-3.2. For each index i, take past TIME_STEPS candles as input X.
-3.3. Take the corresponding class label (UP/DOWN of next candle) as output y.
+## Aim
+To write a program to train a supervised LSTM classifier for "The-Millionare-Stock-Predictor", which predicts the next 1-minute EURUSDm price movement (UP/DOWN) using historical Forex data.
 
-Train–Test Split
-4.1. Split data into training set (e.g., 80%) and test set (20%).
-4.2. Reshape X to LSTM format: (samples, time_steps, features).
+---
 
-Model Design (LSTM Classifier)
-5.1. Define an LSTM model using Keras/TensorFlow.
-5.2. Example architecture:
-- LSTM layer with specified units (e.g., 50)
-- Dropout (optional)
-- Dense output layer with 1 neuron and sigmoid activation.
+## Algorithm
 
-Model Compilation & Training
-6.1. Compile with:
-- Loss: binary_crossentropy
-- Optimizer: adam
-- Metrics: accuracy
-6.2. Train the model for given epochs and batch size.
+### 1. Data Collection and Loading
+1.1 Collect 1-minute EURUSDm candlestick data in CSV format:  
+     EURUSD_Candlestick_1_M_BID_01.01.2024-30.06.2024.csv  
+1.2 Load the CSV using pandas.
 
-Evaluation & Saving
-7.1. Evaluate on test data to obtain accuracy and loss.
-7.2. Save the trained model as model/lstm_model.h5.
-7.3. Save the scaler as model/scaler.pkl.
+### 2. Data Pre-processing
+2.1 Select required columns: datetime, open, high, low, close, volume  
+2.2 Sort data by datetime  
+2.3 Normalize numerical values using MinMaxScaler  
+2.4 Create the supervised learning label:
 
-Prediction (Classifier Usage)
-8.1. Take the latest 60 candles from live data (EURUSDm_1M.csv).
-8.2. Apply the same scaling and reshape.
-8.3. Use the trained LSTM model to predict UP (BUY) or DOWN (SELL).
-8.4. Use this prediction in the trading bot (bot.py) for automated trade decision.
-### Program:
-```
+
+### 3. Sequence Creation (Supervised Learning Format)
+3.1 Choose window size TIME_STEPS = 60 minutes  
+3.2 For each index, take past TIME_STEPS values as input X  
+3.3 Take next candle direction as output y  
+
+### 4. Train–Test Split
+4.1 Split dataset into 80% training and 20% testing  
+4.2 Reshape X to LSTM format: (samples, time_steps, features)
+
+### 5. Model Design (LSTM Classifier)
+- LSTM layer with 50 units  
+- Dropout (optional)  
+- Dense output layer with sigmoid (1 neuron)
+
+### 6. Model Compilation and Training
+- Loss = binary_crossentropy  
+- Optimizer = adam  
+- Metrics = accuracy  
+- Train for specified epochs and batch size
+
+### 7. Evaluation and Saving
+7.1 Evaluate using test accuracy and loss  
+7.2 Save trained model as model/lstm_model.h5  
+7.3 Save scaler as model/scaler.pkl
+
+### 8. Prediction (Model Usage)
+8.1 Take latest 60 candles from live EURUSDm_1M.csv  
+8.2 Apply scaling and reshape  
+8.3 Predict UP/BUY or DOWN/SELL  
+8.4 Use prediction in bot.py for automated trading  
+
+---
+
+## Program
+
+```python
 # train_lstm.py
 import numpy as np
 import pandas as pd
@@ -74,19 +83,15 @@ os.makedirs(MODEL_DIR, exist_ok=True)
 # ---------------- 1. LOAD DATA ----------------
 df = pd.read_csv(DATA_PATH)
 
-# Assume columns: datetime, open, high, low, close, volume
 df = df[['datetime', 'open', 'high', 'low', 'close', 'volume']]
 df.dropna(inplace=True)
 df.sort_values('datetime', inplace=True)
 
 # ---------------- 2. CREATE LABEL (UP / DOWN) ----------------
-# Label = 1 if next close > current close else 0
 df['next_close'] = df['close'].shift(-1)
 df.dropna(inplace=True)
-
 df['label'] = (df['next_close'] > df['close']).astype(int)
 
-# Features (excluding datetime, next_close, label)
 feature_cols = ['open', 'high', 'low', 'close', 'volume']
 X_raw = df[feature_cols].values
 y = df['label'].values
@@ -94,8 +99,6 @@ y = df['label'].values
 # ---------------- 3. SCALING ----------------
 scaler = MinMaxScaler()
 X_scaled = scaler.fit_transform(X_raw)
-
-# Save scaler
 joblib.dump(scaler, os.path.join(MODEL_DIR, 'scaler.pkl'))
 
 # ---------------- 4. CREATE SEQUENCES ----------------
@@ -110,14 +113,14 @@ X, y_seq = create_sequences(X_scaled, y, TIME_STEPS)
 
 # ---------------- 5. TRAIN-TEST SPLIT ----------------
 X_train, X_test, y_train, y_test = train_test_split(
-    X, y_seq, test_size=0.2, shuffle=False  # time series → no random shuffle
+    X, y_seq, test_size=0.2, shuffle=False
 )
 
 # ---------------- 6. BUILD LSTM MODEL ----------------
 model = Sequential()
 model.add(LSTM(50, input_shape=(TIME_STEPS, X.shape[2])))
 model.add(Dropout(0.2))
-model.add(Dense(1, activation='sigmoid'))  # 1 neuron → UP / DOWN
+model.add(Dense(1, activation='sigmoid'))
 
 model.compile(
     loss='binary_crossentropy',
@@ -142,36 +145,14 @@ print(f"Test Accuracy: {acc:.4f}")
 # ---------------- 9. SAVE MODEL ----------------
 model.save(os.path.join(MODEL_DIR, 'lstm_model.h5'))
 print("Model and scaler saved successfully.")
-```
-
-### Output:
-
-raining Log (Console)
-
-Epoch-wise loss and accuracy for training and validation.
-Example (sample):
-```
-Epoch 1/10
-1200/1200 [==============================] - 15s  .... - loss: 0.68 - accuracy: 0.56 - val_loss: 0.65 - val_accuracy: 0.60
+Epoch 1/10 
+loss: 0.68, accuracy: 0.56, val_accuracy: 0.60
 ...
-Epoch 10/10
-1200/1200 [==============================] - 14s  .... - loss: 0.59 - accuracy: 0.68 - val_loss: 0.61 - val_accuracy: 0.66
+Epoch 10/10 
+loss: 0.59, accuracy: 0.68, val_accuracy: 0.66
 
 Test Loss: 0.60
 Test Accuracy: 0.67
 Model and scaler saved successfully.
-
-```
-Saved Files (in project folder)
-
-model/lstm_model.h5 – trained supervised LSTM classifier
-
-model/scaler.pkl – fitted MinMaxScaler
-
-Sample Prediction (from bot.py – optional to show)
-
-Predicted Signal: BUY (class = 1) or SELL (class = 0) for next 1-minute candle.
-
-Used later to automate trading in The-Millionare-Stock-Predictor.
-### Result:
-Thus the system was trained successfully and the prediction was carried out.
+1 = BUY  
+0 = SELL
