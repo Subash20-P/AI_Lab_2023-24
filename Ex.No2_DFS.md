@@ -1,5 +1,5 @@
 # Ex.No: 2  Implementation of Depth First Search
-### DATE:13/9/25                                                                            
+### DATE : 12/08/2025                                                                            
 ### REGISTER NUMBER : 212222060255  
 
 ### AIM:  
